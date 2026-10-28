@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+.git
+.idea
+.serena
+.agents
+.aws
+.codex
+.superpowers
+tmp
+.env
+.env.*
+test-results
+playwright-report
+*.log

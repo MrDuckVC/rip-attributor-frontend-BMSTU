@@ -1,0 +1,81 @@
+import { expect, test } from '@playwright/test'
+
+test('плитка: фильтр, URL, пагинация, гостевые действия и размер макета', async ({ page }) => {
+  const dataRequests: string[] = []
+  const externalRequests: string[] = []
+  page.on('request', (request) => {
+    if (['fetch', 'xhr'].includes(request.resourceType())) dataRequests.push(request.url())
+    if (!request.url().startsWith('http://localhost:3000')) externalRequests.push(request.url())
+  })
+  await page.goto('/corpora')
+  await expect(page.getByRole('link', { name: /^Открыть корпус:/ })).toHaveCount(6)
+  await expect(page.getByRole('button', { name: 'Добавить', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Вход', exact: true })).toBeDisabled()
+  const shell = page.locator('.app-shell')
+  const original = await shell.boundingBox()
+  expect(original?.width).toBe(412)
+  expect(original?.height).toBe(917)
+  await page.setViewportSize({ width: 1000, height: 1000 })
+  const resized = await shell.boundingBox()
+  expect(resized?.width).toBe(412)
+  expect(resized?.height).toBe(917)
+  expect(resized?.x).toBe((1000 - 412) / 2)
+  await page.getByRole('link', { name: 'Далее', exact: true }).click()
+  await expect(page.getByText('Страница 2 из 2')).toBeVisible()
+  await page.getByRole('slider').fill('50000')
+  await page.getByRole('button', { name: 'Применить фильтр' }).click()
+  await expect(page).toHaveURL(/query=50000&page=1/)
+  await expect(page.getByRole('link', { name: /^Открыть корпус:/ })).toHaveCount(5)
+  await page.reload()
+  await expect(page.getByRole('slider')).toHaveValue('50000')
+  await page.getByRole('slider').fill('200000')
+  await page.getByRole('button', { name: 'Применить фильтр' }).click()
+  await expect(page.getByText('Корпусы не найдены')).toBeVisible()
+  expect(dataRequests).toEqual([])
+  expect(externalRequests).toEqual([])
+})
+
+test('лента: локальное видео, переходы, прямые ссылки и отсутствие API', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await page.goto('/corpora/1')
+  const like = page.getByRole('button', { name: 'Лайк — требуется вход' })
+  await expect(like).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.8)')
+  await expect(like).toHaveCSS('color', 'rgb(22, 24, 29)')
+  const video = page.getByLabel('Видео корпуса')
+  await expect(video).toHaveAttribute('src', '/media/puskin.mp4')
+  await expect.poll(() => video.evaluate((node) => (node as HTMLVideoElement).readyState)).toBeGreaterThanOrEqual(2)
+  const dimensions = await video.evaluate((node) => {
+    const element = node as HTMLVideoElement
+    return [element.videoWidth, element.videoHeight]
+  })
+  expect(dimensions).toEqual([720, 1280])
+  await video.dispatchEvent('error')
+  const fallback = page.getByRole('img')
+  await expect(fallback).toHaveCSS('width', '412px')
+  await expect(fallback).toHaveCSS('height', '917px')
+  await page.getByRole('link', { name: 'Следующий корпус' }).click()
+  await expect(page).toHaveURL('/corpora/3')
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'А. С. Пушкин, Проза' })).toBeVisible()
+  await page.goto('/corpora/27')
+  await page.getByRole('link', { name: 'Следующий корпус' }).click()
+  await expect(page).toHaveURL('/corpora/1')
+  await page.goto('/corpora/99999')
+  await expect(page.getByRole('heading', { name: 'Корпус не найден' })).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('production: загружается из локальных ресурсов без доступа к внешним узлам', async ({ page }) => {
+  await page.route('**/*', async (route) => {
+    if (new URL(route.request().url()).hostname === 'localhost') await route.continue()
+    else await route.abort()
+  })
+  await page.goto('/corpora')
+  await page.evaluate(() => document.fonts.ready)
+  expect(await page.evaluate(() => document.fonts.check('500 14px "JetBrains Mono"'))).toBe(true)
+  const image = page.getByRole('img').first()
+  await expect.poll(() => image.evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  await page.getByRole('link', { name: /^Открыть корпус:/ }).first().click()
+  await expect(page.getByLabel('Видео корпуса')).toBeVisible()
+})

@@ -4,7 +4,6 @@ coverage/
 playwright-report/
 test-results/
 tmp/
-docs/
 .idea/
 .serena/
 .agents/
