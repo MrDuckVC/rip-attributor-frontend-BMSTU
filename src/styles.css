@@ -520,3 +520,26 @@ a { text-decoration: none; }
 .not-found { position: absolute; inset: 80px 16px; }
 .not-found h1 { font-size: 18px; margin-bottom: 16px; }
 a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+
+/* ЛР6: общий индикатор блокирует мышь и клавиатуру; оболочка сохраняет 412×917. */
+.app-content { display: contents; border: 0; padding: 0; margin: 0; min-width: 0; }
+.loading-overlay { position: absolute; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: rgba(244,247,250,.82); color: var(--color-blue); }
+.author-login { margin-left: auto; margin-right: 20px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.form-page { position: absolute; top: 80px; bottom: 86px; left: 24px; right: 24px; overflow-y: auto; }
+.form-page h1 { font-size: 22px; margin-bottom: 24px; }
+.form-page .form-label { font-size: 14px; margin-bottom: 6px; }
+.form-page .form-control { border-radius: 14px; font-size: 14px; background-color: rgba(255,255,255,.85); }
+.form-page .form-control:focus { border-color: var(--color-blue); box-shadow: 0 0 0 3px rgba(49,109,224,.15); }
+.form-page .form-control, .form-page .form-text { margin-bottom: 18px; }
+.form-page .btn { border-radius: 24px; font-size: 14px; }
+.form-page .btn-primary { background: var(--color-blue); border-color: var(--color-blue); }
+.form-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.draft-name { font-weight: 700; font-size: 16px; }
+.draft-preview { width: 112px; height: 140px; object-fit: cover; border-radius: 16px; }
+.media-caption, .data-source, .feed-data-source { font-size: 11px; color: var(--color-gray); }
+.data-source { position: absolute; top: 174px; left: 24px; right: 16px; }
+.feed-data-source { position: absolute; top: 70px; left: 16px; z-index: 20; padding: 5px 10px; border-radius: 12px; background: var(--color-bg-white); }
+.request-error { position: absolute; top: 65px; left: 12px; right: 12px; z-index: 110; max-height: 200px; overflow: auto; font-size: 13px; }
+.request-error .btn { padding: 4px; font-size: 12px; }
+.next-corpus { padding: 0; border: 0; background: none !important; color: inherit; }
+.feed-sidebar .is-liked { color: var(--color-blue); background: white; }

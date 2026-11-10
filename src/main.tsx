@@ -4,7 +4,9 @@ import { BrowserRouter } from 'react-router-dom'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './styles.css'
 import App from './App'
+import { Provider } from 'react-redux'
+import { store } from './store'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode><BrowserRouter><App /></BrowserRouter></StrictMode>,
+  <StrictMode><Provider store={store}><BrowserRouter><App /></BrowserRouter></Provider></StrictMode>,
 )

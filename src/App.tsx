@@ -1,35 +1,40 @@
 import { useEffect } from 'react'
-import { Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { Alert, Button, Spinner } from 'react-bootstrap'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
-import { getCorpusById } from './modules/corpora'
 import { FeedPage } from './pages/FeedPage'
 import { GridPage } from './pages/GridPage'
-
-function FeedRoute({ catalogSearch }: { catalogSearch: string }) {
-  const { id } = useParams()
-  const corpus = getCorpusById(id)
-  return corpus
-    ? <FeedPage key={corpus.id} corpus={corpus} catalogSearch={catalogSearch} />
-    : <main className="not-found"><h1>Корпус не найден</h1><Link to="/corpora">К плитке</Link></main>
-}
+import { LoginPage } from './pages/LoginPage'
+import { AddCorpusPage } from './pages/AddCorpusPage'
+import { selectBusy, useAppDispatch, useAppSelector } from './store/hooks'
+import { clearCorpusError, loadCorpora } from './store/corporaSlice'
 
 export default function App() {
   const location = useLocation()
-  const isFeed = location.pathname.startsWith('/corpora/')
-  const state = location.state as { catalogSearch?: string } | null
-  const catalogSearch = location.pathname === '/corpora' ? location.search : state?.catalogSearch ?? ''
-
-  useEffect(() => {
-    document.title = `Атрибутор — ${isFeed ? 'Лента' : 'Плитка'}`
-  }, [isFeed])
-
-  return <div className="app-shell">
-    <header className="header"><Link to={`/corpora${catalogSearch}`} className="logo">Атрибутор</Link></header>
-    <Routes>
-      <Route path="/corpora" element={<GridPage key={location.search} />} />
-      <Route path="/corpora/:id" element={<FeedRoute catalogSearch={catalogSearch} />} />
-      <Route path="*" element={<Navigate to="/corpora" replace />} />
-    </Routes>
-    <TabBar isFeed={isFeed} catalogSearch={catalogSearch} />
+  const dispatch = useAppDispatch()
+  const { appliedMinimum, page, error } = useAppSelector(state => state.corpora)
+  const { login, error: authorError } = useAppSelector(state => state.author)
+  const busy = useAppSelector(selectBusy)
+  const catalogSearch = `?query=${appliedMinimum}&page=${page}`
+  const title = location.pathname === '/login' ? 'Вход' : location.pathname === '/corpora/add' ? 'Добавление' : location.pathname === '/corpora' ? 'Плитка' : 'Лента'
+  useEffect(() => { document.title = `Атрибутор — ${title}` }, [title])
+  return <div className="app-shell" aria-busy={busy}>
+    <fieldset className="app-content" disabled={busy} inert={busy}>
+      <header className="header"><Link to={`/corpora${catalogSearch}`} className="logo">Атрибутор</Link>{login && <span className="author-login" title={login}>{login}</span>}</header>
+      <Routes>
+        <Route path="/corpora" element={<GridPage />} />
+        <Route path="/corpora/add" element={<AddCorpusPage />} />
+        <Route path="/corpora/feed" element={<FeedPage catalogSearch={catalogSearch} />} />
+        <Route path="/corpora/:id" element={<FeedPage catalogSearch={catalogSearch} />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/corpora" replace />} />
+      </Routes>
+      {(error || (authorError && location.pathname !== '/login')) && <Alert variant="danger" className="request-error" role="alert">
+        {error || authorError}
+        {error && <Button variant="link" onClick={() => { dispatch(clearCorpusError()); if (location.pathname === '/corpora') dispatch(loadCorpora()) }}>Понятно{location.pathname === '/corpora' ? ' / Повторить' : ''}</Button>}
+      </Alert>}
+      <TabBar catalogSearch={catalogSearch} />
+    </fieldset>
+    {busy && <div className="loading-overlay" role="status" aria-label="Загрузка"><Spinner animation="border" /><span>Загрузка…</span></div>}
   </div>
 }

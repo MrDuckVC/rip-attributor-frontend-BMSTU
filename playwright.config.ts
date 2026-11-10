@@ -6,7 +6,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3000',
     viewport: { width: 1440, height: 1100 },
-    trace: 'retain-on-failure',
+    trace: { mode: 'retain-on-failure', screenshots: false },
   },
   webServer: {
     command: 'npm run dev',
